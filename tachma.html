@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Công Cụ Tách Mã (Dạng Key:Value)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+        <!-- Header -->
+        <div class="bg-indigo-600 p-6 text-white">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <i class="fa-solid fa-code-branch"></i> Công Cụ Tạo Mã Rút Gọn (Key:Value)
+            </h1>
+            <p class="text-indigo-100 mt-2 text-sm">Chuyển đổi: 25AD9-MI372P-NB-S thành <strong>372S:25AD9-MI372P-NB-S</strong></p>
+        </div>
+
+        <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            <!-- Input Section -->
+            <div class="flex flex-col h-full">
+                <label class="font-semibold text-gray-700 mb-2 flex justify-between items-center">
+                    <span>Dữ liệu đầu vào (Mỗi mã 1 dòng)</span>
+                    <button onclick="clearInput()" class="text-xs text-red-500 hover:text-red-700 underline">Xóa hết</button>
+                </label>
+                <textarea id="inputData" class="flex-1 w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm h-64 md:h-96 resize-none" 
+                placeholder="Dán danh sách vào đây...&#10;25AD12-NI450P-WH-S&#10;25AD9-MI372P-NB-L&#10;..."></textarea>
+                
+                <div class="mt-4">
+                    <button onclick="processData()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex justify-center items-center gap-2">
+                        <i class="fa-solid fa-bolt"></i> Xử lý & Ghép Chuỗi
+                    </button>
+                </div>
+            </div>
+
+            <!-- Output Section -->
+            <div class="flex flex-col h-full">
+                <label class="font-semibold text-gray-700 mb-2 flex justify-between items-center">
+                    <span>Kết quả (Format: Short:Original)</span>
+                    <span id="countBadge" class="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded-full">0 dòng</span>
+                </label>
+                
+                <div class="relative flex-1">
+                    <textarea id="outputData" readonly class="w-full h-full p-4 border border-gray-300 bg-gray-50 rounded-lg focus:outline-none font-mono text-sm h-64 md:h-96 resize-none text-indigo-900 font-semibold"></textarea>
+                </div>
+
+                <div class="mt-4 grid grid-cols-2 gap-3">
+                    <button onclick="copyToClipboard()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex justify-center items-center gap-2">
+                        <i class="fa-regular fa-copy"></i> Copy Kết Quả
+                    </button>
+                    <button onclick="exportToCSV()" class="bg-gray-700 hover:bg-gray-800 text-white font-bold py-3 px-4 rounded-lg transition duration-200 flex justify-center items-center gap-2">
+                        <i class="fa-solid fa-file-csv"></i> Xuất Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white px-4 py-2 rounded shadow-lg transform translate-y-20 transition-transform duration-300 flex items-center gap-2 opacity-0">
+        <i class="fa-solid fa-check-circle text-green-400"></i> <span id="toastMsg">Thành công</span>
+    </div>
+
+    <script>
+        // Logic xử lý chính
+        function processData() {
+            const input = document.getElementById('inputData').value;
+            if (!input.trim()) {
+                showToast('Vui lòng nhập dữ liệu trước!', true);
+                return;
+            }
+
+            const lines = input.split('\n');
+            let count = 0;
+
+            const processedLines = lines.map(line => {
+                const originalLine = line.trim();
+                if (!originalLine) return "";
+
+                // Tách chuỗi dựa trên dấu gạch ngang "-"
+                const parts = originalLine.split('-');
+
+                // Kiểm tra định dạng cơ bản
+                if (parts.length < 3) {
+                    return `${originalLine} (Lỗi định dạng)`;
+                }
+
+                const productCodeSegment = parts[1]; // Ví dụ: MI372P
+                const sizeSegment = parts[parts.length - 1]; // Ví dụ: S
+
+                // Tách số từ productCodeSegment
+                const numbers = productCodeSegment.replace(/\D/g, ''); 
+
+                if (!numbers) {
+                     return `${originalLine} (Không tìm thấy số)`;
+                }
+                
+                // Tạo mã rút gọn: 372S
+                const shortCode = `${numbers}${sizeSegment}`;
+
+                count++;
+                
+                // Trả về định dạng: 372S:25AD9-MI372P-NB-S
+                return `${shortCode}:${originalLine}`;
+            });
+
+            // Lọc bỏ dòng trống và nối lại
+            const finalResult = processedLines.filter(l => l).join('\n');
+            
+            document.getElementById('outputData').value = finalResult;
+            document.getElementById('countBadge').textContent = `${count} dòng`;
+            
+            if(count > 0) {
+                showToast(`Đã xử lý xong ${count} mã!`);
+            }
+        }
+
+        function clearInput() {
+            document.getElementById('inputData').value = '';
+            document.getElementById('outputData').value = '';
+            document.getElementById('countBadge').textContent = '0 dòng';
+            document.getElementById('inputData').focus();
+        }
+
+        function copyToClipboard() {
+            const output = document.getElementById('outputData');
+            if (!output.value) {
+                showToast('Không có dữ liệu để copy!', true);
+                return;
+            }
+            output.select();
+            document.execCommand('copy'); 
+            showToast('Đã copy vào bộ nhớ đệm!');
+        }
+
+        function exportToCSV() {
+            const outputVals = document.getElementById('outputData').value.split('\n').filter(l => l.trim());
+
+            if (outputVals.length === 0) {
+                showToast('Không có dữ liệu để xuất file!', true);
+                return;
+            }
+
+            let csvContent = "\uFEFF"; // BOM
+            csvContent += "Mã Rút Gọn,Mã Gốc,Chuỗi Ghép\n";
+
+            for (let i = 0; i < outputVals.length; i++) {
+                const line = outputVals[i];
+                if(line.includes(':')) {
+                    // Tách ngược lại để đưa vào cột Excel cho đẹp
+                    const [shortCode, originalCode] = line.split(':');
+                    // Excel format: Cột 1: Mã ngắn, Cột 2: Mã gốc, Cột 3: Chuỗi ghép hoàn chỉnh
+                    csvContent += `"${shortCode}","${originalCode}","${line}"\n`;
+                } else {
+                    csvContent += `"${line}","",""\n`;
+                }
+            }
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "ma_san_pham_ghep.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Đang tải xuống file Excel...');
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            
+            toastMsg.innerText = message;
+            if (isError) {
+                toast.querySelector('i').className = "fa-solid fa-circle-exclamation text-red-400";
+            } else {
+                toast.querySelector('i').className = "fa-solid fa-check-circle text-green-400";
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
